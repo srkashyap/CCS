@@ -1,0 +1,80 @@
+import numpy as np
+import pandas as pd
+import random
+from collections import defaultdict
+import math
+import matplotlib.pyplot as plt
+
+days = ['Monday','Tuesday','Wednesday','Thursday','Friday']
+
+def allocation(days):
+  my_dict = defaultdict(lambda : list())
+  dict_bottom = defaultdict(lambda : list())
+
+  for i,j in enumerate(days):
+      #starting count timer = 0
+      timer = 0
+
+      #1sleep time generation
+      sleep_time = math.floor(random.normalvariate(8.8,0.8)*60)
+      my_dict['sleep'].append(sleep_time)  #calculated in hrs and converted to mins
+      #update sleep time
+      timer += sleep_time
+      dict_bottom['eat'].append(sleep_time)
+      
+
+      #3 eat time mean = 84 mins and sd = 5
+      eat_time = math.floor(random.normalvariate(84,5))
+      my_dict['eat'].append(eat_time)  #calculated in mins
+      timer += eat_time
+      dict_bottom['commute'].append(dict_bottom['eat'][i]+eat_time)
+
+      #5 commute time in mins
+      times = [0,5,10,15,20,25,30,32]
+      probabilities = [0.196,0.462,0.188,0.077,0.038,0.015,0.006999999999999895,0.017]
+      commute_time = int(np.random.choice(times,replace=True, p = probabilities)/5)*60
+      my_dict['commute'].append(commute_time)
+      timer += commute_time
+      dict_bottom['social'].append(dict_bottom['commute'][i]+commute_time)
+      
+      #7 socializing time in mins
+      times = [0,5,10,15,20,25,30,32]
+      probabilities = [0.018,0.186,0.268,0.23,0.14,0.062,0.028,0.068]
+      time_socializing = int(np.random.choice(times,replace=True, p = probabilities)/5)*60
+      my_dict['social'].append(time_socializing)
+      timer += time_socializing
+      dict_bottom['residual'].append(dict_bottom['social'][i]+time_socializing)
+
+
+      my_dict['residuals'].append(1440-timer)
+  #print(my_dict)
+  return my_dict,dict_bottom
+  
+  
+  
+  def plot_schedule(my_dict,dict_bottom):
+
+  N = 5
+  sleep_times = my_dict['sleep']
+  commute_times = my_dict['commute']
+  eat_times = my_dict['eat']
+  time_socializing = my_dict['social']
+  residual_times = my_dict['residuals']
+
+  ind = np.arange(N)  
+  width = 0.35       
+
+  plt.figure(figsize=(7,5))
+  p1 = plt.bar(ind, sleep_times, width)
+  p2 = plt.bar(ind, commute_times, width,bottom = dict_bottom['commute'])
+  p3 = plt.bar(ind, eat_times,width,bottom = dict_bottom['eat'])
+  p4 = plt.bar(ind, time_socializing,width,bottom= dict_bottom['social'])
+  p5 = plt.bar(ind, residual_times,width,bottom= dict_bottom['residual'])
+
+  plt.ylabel('minutes')
+  plt.title('day of the week')
+  plt.xticks(ind, ('Monday','Tuesday','Wednesday','Thursday','Friday'))
+  ## plt.yticks(np.arange(0, 81, 10))
+  plt.legend((p1[0], p2[0],p3[0],p4[0],p5[0]), ('sleep', 'commute','eat','social','Residuals'),loc=1)
+  plt.show()
+  return
