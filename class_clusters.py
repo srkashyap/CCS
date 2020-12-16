@@ -71,7 +71,7 @@ students = df0.groupby(by = ['STUDENTSOURCEKEY'])
 # In[274]:
 
 
-#st = np.zeros((1440,6))
+st = np.zeros((1440,6))
 days_map=['monday','tuesday','wednesday','thursday','friday','saturday']
 
 
@@ -99,7 +99,7 @@ for i,j in students:
             coords = np.array([st,days_map.index(day)])
             np.put(fin, np.ravel_multi_index(coords.T, fin.shape), 1)
     res+=fin                          
-# print(res[400:450,:])
+print(res[400:450,:])
 
 
 # In[286]:
@@ -111,7 +111,7 @@ np.shape(res)
 # In[ ]:
 
 
-# date_int = df0.date_range(row["starttm"], row["endtm"], freq="5min")
+date_int = df0.date_range(row["starttm"], row["endtm"], freq="5min")
 
 
 # In[356]:
@@ -123,23 +123,23 @@ np.shape(res)
 # In[400]:
 
 
-# fig, ax = plt.subplots(dpi = 100)
-# im = ax.imshow(res,aspect='auto')
-# # ax.pcolor(res,cmap='YlGnBu')
+fig, ax = plt.subplots(dpi = 100)
+im = ax.imshow(res,aspect='auto')
+# ax.pcolor(res,cmap='YlGnBu')
 
-# ax.set_xticks(np.arange(6))
-# # ax.set_yticks(np.arange(5))
+ax.set_xticks(np.arange(6))
+# ax.set_yticks(np.arange(5))
 
-# ax.set_xticklabels(days_map,fontsize = 7)
-# # ax.set_yticklabels(np.arrange(960))
-# # plt.imshow(res)
-# # plt.colorbar()
-# heatmap = plt.pcolor(res)
-# plt.colorbar(heatmap)
+ax.set_xticklabels(days_map,fontsize = 7)
+# ax.set_yticklabels(np.arrange(960))
+# plt.imshow(res)
+# plt.colorbar()
+heatmap = plt.pcolor(res)
+plt.colorbar(heatmap)
 
-# plt.title('heatmap for classes throughout the week')
-# ax.legend()
-# plt.show()
+plt.title('heatmap for classes throughout the week')
+ax.legend()
+plt.show()
 
 
 # In[450]:
@@ -154,11 +154,11 @@ plt.ylabel("Time",fontsize = 15)
 
 
 ax.set_xticks(np.arange(6))
-# ax.set_yticks(np.arange(9))
-#y_label=np.arange(960)
-#print(y_label)
+ax.set_yticks(np.arange(9))
+y_label=np.arange(960)
+print(y_label)
 ax.set_xticklabels(days_map,fontsize = 15)
-#ax.set_yticklabels(y_label)
+ax.set_yticklabels(y_label)
 
 plt.title('heatmap for classes throughout the week')
 ax.legend()
