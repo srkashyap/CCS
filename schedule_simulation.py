@@ -1,3 +1,9 @@
+
+# coding: utf-8
+
+# In[301]:
+
+
 import math
 import random
 import datetime
@@ -5,69 +11,146 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import copy
 
-df0 = pd.read_excel('2199 SCHEDULES 10232020.xlsx')
 
-df0.reset_index(inplace=True)
+# In[333]:
 
-drops = ['Arranged','To Be Determined','Unknown','Unspecified']
-drop_indexes = []
-for i,j in df0.iterrows():
-    if j['CLASSMEETINGPATTERN'] in drops:
-        drop_indexes.append(i)
-df0 = df0.drop(drop_indexes)
-df0.reset_index(inplace=True)
-times = []
-for i in range(len(df0)):
-    if df0.CLASSSTARTTIME[i] != 'Unknown' and df0.CLASSENDTIME[i] != 'Unknown':
-        end = pd.to_datetime(df0.CLASSENDTIME[i]) 
-        start = pd.to_datetime(df0.CLASSSTARTTIME[i])
-        time = pd.Timedelta(end - start) / np.timedelta64(1, 'm')
-#         print(time / np.timedelta64(1, 'm'))
-    #     astype('timedelta64[s]')
-        times.append(time)
-    else:
-        times.append(0)
-df0['timeofclass'] = times
 
-dfn=df0
+#NSSE DATA PROCESSING **************************************
 
-def class_times(df0):
-    df2 = df0 
-    df2.reset_index(inplace=True)
-    student_keys = df2.STUDENTSOURCEKEY.unique()
+def preprocess_nsse(data):
+    drop_columns = ['tmprep','tmcocurr', 'tmworkon', 'tmworkoff', 'tmservice', 'tmrelax', 'tmcare','tmcommute']
+    drop_indexes = []
+    for k in drop_columns:
+        for i,j in data.iterrows():
+            if j[k] == '#NULL!':
+                drop_indexes.append(i)
+    df = data.drop(drop_indexes)
+    return df
+def percentages_calc(dataframe,column):
+    percents_ = []
+    for val in range(1,9):
+        try:
+            percents_.append((dataframe[column].value_counts()[str(val)]/dataframe.shape[0]))
+        except:
+            pass
+#         break
+    return percents_
+def act_probs(dataframe):
+    drop_columns = ['tmprep','tmcocurr', 'tmworkon', 'tmworkoff', 'tmservice', 'tmrelax', 'tmcare','tmcommute']
+    percents = defaultdict(int)
+    for i in drop_columns:
+#         print(i,'*************')
+#         print(dataframe.columns)
+        percents[i] = percentages_calc(dataframe,i)
+#         break
+    return percents
+
+
+# In[305]:
+
+
+#CLEANING AND PREPROCESSING COLLEGE DATA
+#1. DROPPING THE SPECIFIED VALUES
+#2. FORMING A NEW COLUMN CONSISTING OF TIME SPENT IN CLASS IN MINUTES. IT WILL BE LATER USED.
+def preprocess_college(df0):
+   drops = ['Arranged','To Be Determined','Unknown','Unspecified']
+   drop_indexes = []
+   for i,j in df0.iterrows():
+       if j['CLASSMEETINGPATTERN'] in drops:
+           drop_indexes.append(i)
+   df0 = df0.drop(drop_indexes)
+   df0.reset_index(inplace=True)
+   times = []
+   for i in range(len(df0)):
+       if df0.CLASSSTARTTIME[i] != 'Unknown' and df0.CLASSENDTIME[i] != 'Unknown':
+           end = pd.to_datetime(df0.CLASSENDTIME[i]) 
+           start = pd.to_datetime(df0.CLASSSTARTTIME[i])
+           time = pd.Timedelta(end - start) / np.timedelta64(1, 'm')
+           times.append(time)
+       else:
+           print('x')
+           times.append(0)
+   df0['timeofclass'] = times
+   return df0
+
+
+# In[290]:
+
+
+def class_times(df_0):
+    df_2 = df_0 
+    student_keys = df_2.STUDENTSOURCEKEY.unique()
     key = random.choice(student_keys)
-#     print(key)
-    df2.set_index('STUDENTSOURCEKEY',inplace=True)
-    df1 = df2.loc[key]
-    tot_creds = df1['CREDITSATTEMPTED'].sum()
+    df_1 = df_2.loc[df_2['STUDENTSOURCEKEY'] == key]
+    tot_creds = df_1['CREDITSATTEMPTED'].sum()
     class_dict = defaultdict(int)
-    for i,j in df1.iterrows():
-        x = j['CLASSMEETINGPATTERN'].replace('-',',')
+    for it,jt in df_1.iterrows():
+        x = jt['CLASSMEETINGPATTERN'].replace('-',',')
         x = x.split(',')
         for days in x:
-            j['timeofclass']
-            class_dict[days] += j['timeofclass'] 
-    
+#             jt['timeofclass']
+            print(days,'Kashyap')
+            class_dict[days] += jt['timeofclass'] 
     return class_dict,tot_creds
 
 
-# In[209]:
+# In[311]:
 
 
-n,m= class_times(dfn)
-n,m
+def class_times(table):
+    table1 = copy.deepcopy(table) 
+#     df2.reset_index(inplace=True)
+    student_keys = table1.STUDENTSOURCEKEY.unique()
+    key = random.choice(student_keys)
+#     print(key)
+#     df2.set_index('STUDENTSOURCEKEY',inplace=True)
+#     df1 = df2.loc[key]
+    table2 = copy.deepcopy(table1.loc[table1['STUDENTSOURCEKEY'] == key])
+    tot_creds = table2['CREDITSATTEMPTED'].sum()
+    class_dict = defaultdict(int)
+    for it,jt in table2.iterrows():
+        x = jt['CLASSMEETINGPATTERN'].replace('-',',')
+        x = x.split(',')
+        for days in x:
+#             j['timeofclass']
+#             print(jt['timeofclass'],'*********')
+            class_dict[days] += jt['timeofclass'] 
+#             break
+#         break
+    return class_dict,tot_creds
 
-acts = pd.read_excel('activities.xlsx')
-com_times = acts["commute_times"].tolist()
-com_probabilities = acts["commute_probs"].tolist()
-w_times = acts["work_times"].tolist()
-w_probabilities = acts["work_probs"].tolist()
-s_times = acts["social_times"].tolist()
-s_probabilities = acts["social_probs"].tolist()
+
+# In[252]:
 
 
-days = ['Monday','Tuesday','Wednesday','Thursday','Friday']
+# days = ['Monday','Tuesday','Wednesday','Thursday','Friday']
+# acts = pd.read_excel('activities.xlsx')
+# com_probabilities = acts["commute_probs"].tolist()
+# w_probabilities = nsse_probs['tmworkoff']
+# s_probabilities = nsse_probs['tmrelax']
+
+
+# In[253]:
+
+
+# acts = pd.read_excel('activities.xlsx')
+# # com_times = acts["commute_times"].tolist()
+# com_probabilities = acts["commute_probs"].tolist()
+# # w_times = acts["work_times"].tolist()
+# w_probabilities = acts["work_probs"].tolist()
+# s_times = acts["social_times"].tolist()
+# s_probabilities = acts["social_probs"].tolist()
+
+
+# In[254]:
+
+
+# days = ['Monday','Tuesday','Wednesday','Thursday','Friday']
+
+
+# In[255]:
 
 
 def allocation(days,class_dict,tot_creds):
@@ -108,11 +191,11 @@ def allocation(days,class_dict,tot_creds):
         dict_bottom['work'].append(dict_bottom['commute'][i]+commute_time)
 
         #6 work on campus
-#         w_times = [0,5,10,15,20,25,30,32]
+        w_times = [0,5,10,15,20,25,30,32]
 #         w_probabilities = [0.742,0.031,0.092,0.067,0.039,0.015,0.008,0.006]
         
-        w_times = [0,3,7.5,12.5,17.5,22.5,37.5,35]
-        w_probabilities = [0.59,0.044,0.058,0.097,0.085,0.053,0.029,0.044]
+#         w_times = [0,3,7.5,12.5,17.5,22.5,37.5,35]    #off campus
+#         w_probabilities = [0.59,0.044,0.058,0.097,0.085,0.053,0.029,0.044]   #off campus
         
         work_time = int(np.random.choice(c_times,replace=True, p = w_probabilities)/5)*60
 
@@ -122,7 +205,7 @@ def allocation(days,class_dict,tot_creds):
 
         #7 socializing time in mins
         s_times = [0,5,10,15,20,25,30,32]
-        s_probabilities = [0.018,0.186,0.268,0.23,0.14,0.062,0.028,0.068]
+#         s_probabilities = [0.018,0.186,0.268,0.23,0.14,0.062,0.028,0.068]
         time_socializing = int(np.random.choice(s_times,replace=True, p = s_probabilities)/5)*60
         my_dict['social'].append(time_socializing)
         timer += time_socializing
@@ -154,6 +237,9 @@ def allocation(days,class_dict,tot_creds):
             cumm_class.append(sum(my_dict[i]))
         
     return my_dict,dict_bottom,cummulative,cumm_class
+
+
+# In[256]:
 
 
 def plot_daily(my_dict,dict_bottom):
@@ -191,6 +277,8 @@ def plot_daily(my_dict,dict_bottom):
     return
 
 
+# In[257]:
+
 
 def plot_weekly(my_dict,cummulative):
     # Pie chart, where the slices will be ordered and plotted counter-clockwise:
@@ -206,32 +294,110 @@ def plot_weekly(my_dict,cummulative):
     return
 
 
+# In[258]:
 
-n,m = class_times(df0)
-x,y,z1,z2 = allocation(days,n,m)
-# plot_daily(x,y )
-plot_weekly(x,z1)
-# plot_weekly(x,z2)
 
-negatives_x = []
-negatives_y = []
-residual_times = []
-for i in range(320):
-#     print(i)
-    n,m = class_times(dfn)
-    residual_times_ind = []
-    for j in range(20):        
-        a,b,c1,c2 = allocation(days,n,m)
-        residual_times.append(c1[-1])
-        if c1[-1] <0:
-            negatives_x.append(a)
-            negatives_y.append(b)
-#             print('OBSERVE')
-#             break
-#     break
-residuals = [residual for residual in residual_times if residual>=0]
-plt.figure(figsize=(10,10))
-plt.violinplot(residuals,vert=True)
-plt.ylabel('Residual times in minutes')
-plt.title('Residual times over the weekday')
-plt.show()
+# n,m = class_times(df0)
+# x,y,z1,z2 = allocation(days,n,m)
+# # plot_daily(x,y)
+# plot_weekly(x,z1)
+# # plot_weekly(x,z2)
+# # x,y,z1,z2
+# x
+
+
+# In[362]:
+
+
+def simulate(students, acts,dats,gender):
+    negatives_x = []
+    negatives_y = []
+    residual_times = []
+    for i in range(students):
+    #     print(i)
+        n,m = class_times(dats)
+        residual_times_ind = []
+        for j in range(acts):        
+            a,b,c1,c2 = allocation(days,n,m)
+            residual_times.append(c1[-1])
+            if c1[-1] <0:
+                negatives_x.append(a)
+                negatives_y.append(b)
+    residuals = [residual for residual in residual_times if residual>=0]
+    print(sum(residuals)/len(residuals))
+    plt.figure(figsize=(6,4))
+    plt.violinplot(residuals,vert=True)
+    plt.ylabel('Residual times in minutes')
+    plt.title('Residual times over the weekday for :' + gender + ' Students')
+    plt.show()
+
+
+# In[306]:
+
+
+df0_college = pd.read_excel('spring_2017.xlsx')
+
+
+# In[320]:
+
+
+# PREPROCESSING COLLEGE DATA
+df0 = preprocess_college(df0_college)
+dfn= copy.deepcopy(df0)
+
+
+# In[327]:
+
+
+data = pd.read_excel('NSSE_2017_all.xlsx')
+# data.reset_index(inplace=True)
+
+
+# In[336]:
+
+
+#SETTING PARAMETERS
+students_to_be_selected = 50
+activities_combination  = 20
+
+
+# In[364]:
+
+
+#SIMULATING FOR GENDERS
+ # UNCOMMENT AND RUN FOR PRINTING GENDER WISE SIMULATION
+tickers = ['Male','Female']
+for sex in tickers:   
+    data = pd.read_excel('NSSE_2017_all.xlsx')
+    data.reset_index(inplace=True)
+    data = data.loc[data['Gender'] == sex]
+    nsse_ready = preprocess_nsse(data)
+    nsse_probs =  act_probs(nsse_ready)
+    days = ['Monday','Tuesday','Wednesday','Thursday','Friday']
+    acts = pd.read_excel('activities.xlsx')
+    com_probabilities = acts["commute_probs"].tolist()
+    w_probabilities = nsse_probs['tmworkoff']
+    s_probabilities = nsse_probs['tmrelax']
+    simulate(students_to_be_selected,activities_combination,dfn.loc[dfn['GENDER'] == sex],sex)
+    
+
+
+# In[376]:
+
+
+#SIMULATING FOR ETHNICITY
+ # UNCOMMENT AND RUN FOR PRINTING GENDER WISE SIMULATION
+tickers = ['WHI', 'HIS', 'ASI', 'FOR', 'UNK', 'AFR', 'IND', 'MUL', 'HPI']
+for sex in tickers:   
+    data = pd.read_excel('NSSE_2017_all.xlsx')
+    data.reset_index(inplace=True)
+    data = data.loc[data['Ethnicity'] == sex]
+    nsse_ready = preprocess_nsse(data)
+    nsse_probs =  act_probs(nsse_ready)
+    days = ['Monday','Tuesday','Wednesday','Thursday','Friday']
+    acts = pd.read_excel('activities.xlsx')
+    com_probabilities = acts["commute_probs"].tolist()
+    w_probabilities = nsse_probs['tmworkoff']
+    s_probabilities = nsse_probs['tmrelax']
+    simulate(students_to_be_selected,activities_combination,dfn.loc[dfn['GENDER'] == sex],sex)
+    
